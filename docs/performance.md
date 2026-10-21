@@ -13,6 +13,12 @@ These are short development measurements from an RTX 5090, driver 615.78.08, Cac
 
 An earlier 4K → 8K High experiment achieved about 24.8 enhanced fps and dropped source frames. The current renderer has changed since then; that number is a warning about processing cost, not a current benchmark or an artificial resolution cap.
 
+## Visible-output validation added in 0.8.1
+
+The earlier fps figures measure processing and worker canvas presentation throughput. A later layer-order bug was found: YouTube's native video could cover those successful canvas paints. Those earlier counters alone must not be used as evidence that enhanced pixels were visible. Version 0.8.1 adds composited screenshot tests and puts the overlay above the native video while retaining higher player controls.
+
+A local 360p → 4K fixture measured 332 ms from enable to the first enhanced canvas frame with the service already running, about 50 ms steady capture-to-presentation age, and 0.5 ms to remove the overlay inside the stop handler. Browser messaging/physical display latency are not included in that stop-handler figure. A separate browser-native startup from a fully stopped engine measured 956 ms to the first frame. These are individual software timing checks, not universal startup guarantees. The helper's 30-second idle exit delay does not delay switching the picture off.
+
 ## What the numbers mean
 
 Processing time includes capture, transfers, AI, encoding and return decoding. It excludes intentional picture waiting for the audio output clock. Service inference time is only one part of that processing path. Do not label capture-to-canvas age as AI inference time or interpret a two-frame presentation wait as an encoder stall without the component timings.

@@ -128,6 +128,20 @@
   let captureMs = 0,
     startupTimer = null;
   let lastPresentedTime = -1;
+  let enabledAt = 0,
+    firstFrameMs = null;
+  function markPresented() {
+    if (firstFrameMs === null) {
+      firstFrameMs = Math.round(performance.now() - enabledAt);
+      host.dataset.firstFrameMs = String(firstFrameMs);
+    }
+    if (starting) {
+      starting = false;
+      clearTimeout(startupTimer);
+      ui("toggle").textContent = "VSR ON";
+      ui("toggle").removeAttribute("aria-busy");
+    }
+  }
   const pictureWidth = (image) => image.displayWidth || image.width;
   const pictureHeight = (image) => image.displayHeight || image.height;
   const wall = () => performance.timeOrigin + performance.now();
@@ -190,6 +204,7 @@
     overlay.style.display = comparison ? "none" : "block";
     lastPresentedTime = msg.mediaTime;
     lastResult = now;
+    markPresented();
     frames++;
     host.dataset.presentedMediaTime = String(msg.mediaTime);
     host.dataset.presentedWall = String(wall());
@@ -323,12 +338,22 @@
           ? overlay.parentElement || video.parentElement
           : video.parentElement,
       p = parent.getBoundingClientRect();
+    // The stable player parent survives YouTube fullscreen moves, but its
+    // native video lives in a separate z-index:10 stacking context. A fixed
+    // z-index:1 overlay can decode/paint successfully underneath that video.
+    // Place it just above the video's branch, below separate player controls.
+    let videoLayer = video;
+    while (videoLayer.parentElement && videoLayer.parentElement !== parent)
+      videoLayer = videoLayer.parentElement;
+    const nativeLayer =
+      Number.parseInt(getComputedStyle(videoLayer).zIndex) || 0;
     Object.assign(overlay.style, {
       left: `${v.left - p.left + parent.scrollLeft}px`,
       top: `${v.top - p.top + parent.scrollTop}px`,
       width: `${v.width}px`,
       height: `${v.height}px`,
       objectFit: getComputedStyle(video).objectFit || "contain",
+      zIndex: String(Math.max(1, nativeLayer + 1)),
     });
     const fullscreen = document.fullscreenElement;
     if (fullscreen === video) {
@@ -375,6 +400,7 @@
     ui("toggle").setAttribute("aria-pressed", "false");
     ui("toggle").removeAttribute("aria-busy");
     host.dataset.active = "false";
+    host.dataset.stage = "off";
     host.dataset.audio = JSON.stringify(audioSync.stats());
     if (message) status(message);
   }
@@ -526,6 +552,9 @@
   }
   async function start() {
     stop();
+    enabledAt = performance.now();
+    firstFrameMs = null;
+    delete host.dataset.firstFrameMs;
     delete host.dataset.lastError;
     ui("status").removeAttribute("role");
     video = findVideo();
@@ -575,7 +604,7 @@
     host.dataset.stage = "audio";
     status("Starting synchronized audio…");
     startupTimer = setTimeout(() => {
-      if (g === generation && !ready)
+      if (g === generation && !frames && !video.paused && !document.hidden)
         fail(
           `VSR startup timed out during ${host.dataset.stage}. Play the video, then retry.`,
         );
@@ -602,7 +631,7 @@
     video.addEventListener("waiting", invalidate);
     video.addEventListener("playing", invalidate);
     video.addEventListener("enterpictureinpicture", pictureInPicture);
-    ui("toggle").textContent = "VSR ON";
+    ui("toggle").textContent = "VSR STARTING…";
     ui("toggle").setAttribute("aria-pressed", "true");
     host.dataset.active = "true";
     host.dataset.frames = "0";
@@ -720,6 +749,7 @@
           overlay.dataset.outputHeight = String(msg.stats.height);
           overlay.style.display = comparison ? "none" : "block";
           lastResult = now;
+          markPresented();
           lastPresentedTime = msg.mediaTime;
           frames++;
           host.dataset.stage = "displaying";
@@ -749,11 +779,8 @@
           return;
         }
         if (msg.type === "ready") {
-          clearTimeout(startupTimer);
-          starting = false;
-          ui("toggle").removeAttribute("aria-busy");
           ready = true;
-          status("NVIDIA engine ready. Play the video.");
+          status("Engine connected. Waiting for the first enhanced frame…");
           captureFrame();
         } else if (msg.type === "result") {
           host.dataset.stage = "displaying";
@@ -924,9 +951,26 @@
   function dashboardState() {
     const source = findVideo(),
       resolved = updateSizing(source);
+    const presenting =
+      active &&
+      !starting &&
+      !resolved?.bypass &&
+      !comparison &&
+      !video?.paused &&
+      !video?.seeking &&
+      !document.hidden &&
+      overlay.isConnected &&
+      overlay.style.display !== "none" &&
+      frames > 0 &&
+      performance.now() - lastResult < 500;
     return {
       active,
       starting,
+      presenting: !!presenting,
+      tabVisible: !document.hidden,
+      comparing: comparison,
+      seeking: !!source?.seeking,
+      firstFrameMs,
       video: !!source,
       paused: source?.paused,
       sourceWidth: source?.videoWidth || 0,

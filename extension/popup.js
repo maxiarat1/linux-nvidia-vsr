@@ -13,6 +13,8 @@ const sample = {
   video: true,
   active: false,
   starting: false,
+  presenting: false,
+  firstFrameMs: 350,
   sourceWidth: 1920,
   sourceHeight: 1080,
   outputWidth: 3840,
@@ -34,7 +36,7 @@ async function request(action, extra = {}) {
     if (action === "health" || action === "engine-start")
       return { ready: true };
     if (action === "start" || action === "stop")
-      sample.active = action === "start";
+      sample.presenting = sample.active = action === "start";
     if (action === "settings") {
       Object.assign(sample, extra.settings);
       const scale =
@@ -106,38 +108,28 @@ function connection() {
 }
 function render(s) {
   state = s;
+  const view = VsrPopupState(s);
   for (const id of ["quality", "scale", "target"]) el(id).value = s[id];
   el("target").disabled = s.scale !== "auto" || busy;
   el("quality").disabled = el("scale").disabled = busy;
   el("panel").checked = s.panelVisible;
   el("panel").disabled = busy;
   // An offline engine is normal: the native helper starts it on Enable.
-  el("toggle").disabled = busy || s.starting || !s.video || !bridgeReady;
+  el("toggle").disabled = busy || !s.video || !bridgeReady;
   el("toggle").textContent = s.starting
-    ? "Starting enhancement…"
+    ? "Cancel start"
     : s.active
       ? "Turn off enhancement"
       : "Enable for this video";
   el("toggle").classList.toggle("on", s.active);
   el("toggle").setAttribute("aria-pressed", String(s.active));
-  el("state-tag").textContent = s.starting
-    ? "STARTING"
-    : s.active
-      ? s.bypass
-        ? "ORIGINAL"
-        : "LIVE"
-      : "STANDBY";
-  el("state-title").textContent = s.starting
-    ? "Starting enhancement"
-    : s.active
-      ? s.bypass
-        ? "Original playback"
-        : "Enhancement on"
-      : s.video
-        ? "Enhancement off"
-        : "No video selected";
+  el("state-tag").textContent = view.tag;
+  el("state-tag").classList.toggle("live", view.kind === "live");
+  el("state-title").textContent = view.title;
   el("summary").textContent = s.video
-    ? `${s.sourceWidth} × ${s.sourceHeight} → ${s.outputWidth} × ${s.outputHeight}`
+    ? view.kind === "live"
+      ? `${s.sourceWidth} × ${s.sourceHeight} → ${s.outputWidth} × ${s.outputHeight}`
+      : `${s.sourceWidth} × ${s.sourceHeight} · Original video`
     : "Play a video in this tab, then reopen these controls.";
   el("factor").textContent = `${s.scale === "auto" ? "AUTO · " : ""}${Number(
     s.effectiveScale || 1,
@@ -147,7 +139,7 @@ function render(s) {
   el("resolution-note").textContent = s.bypass
     ? "Source exceeds the target. The original video is shown."
     : "Aspect ratio is preserved.";
-  const live = s.active && !s.bypass;
+  const live = view.kind === "live";
   for (const [id, value, suffix] of [
     ["fps", live ? Number(s.fps || 0).toFixed(1) : "—", " fps"],
     ["latency", live ? Math.round(s.processingMs || 0) : "—", " ms"],
@@ -162,15 +154,21 @@ function render(s) {
   message(
     connectionError?.message ||
       s.error ||
-      (s.starting
-        ? "Starting the local engine and connecting this video…"
-        : s.active
-          ? s.bypass
-            ? "The source is already above your selected target."
-            : "NVIDIA AI enhancement is active. Playback controls stay with the video."
-          : s.video
-            ? "Enable enhancement for this video. Processing stops when you turn it off."
-            : "Open these controls from the video tab."),
+      (view.kind === "paused"
+        ? "Resume the video to see enhanced frames. The original is shown while paused."
+        : view.kind === "hidden"
+          ? "Enhancement waits while the video tab is hidden. Return to that tab."
+          : s.starting
+            ? "Starting the local engine and connecting this video…"
+            : s.active
+              ? s.bypass
+                ? "The source is already above your selected target."
+                : live
+                  ? `Enhanced frames are visible.${s.firstFrameMs != null ? ` First frame after ${(s.firstFrameMs / 1000).toFixed(2)} s.` : ""}`
+                  : "Connected, but no fresh enhanced frame is visible yet."
+              : s.video
+                ? "Enable enhancement for this video. Processing stops when you turn it off."
+                : "Open these controls from the video tab."),
     !!connectionError || !!s.error,
   );
   connection();
@@ -272,7 +270,7 @@ el("expand").addEventListener("click", () => {
       : (await chrome.tabs.query({ active: true, currentWindow: true }))[0]?.id;
   }
   await Promise.all([health(), refresh()]);
-  setInterval(refresh, 1000);
+  setInterval(refresh, 250);
   setInterval(health, 5000);
 })().catch((error) => {
   connectionError = error;

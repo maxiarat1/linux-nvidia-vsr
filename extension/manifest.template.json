@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Local NVIDIA VSR",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Send a video's frames to your local NVIDIA VSR engine. Opt-in per tab with audio-clock synchronization.",
   "permissions": ["activeTab", "scripting", "storage", "nativeMessaging"],
   "host_permissions": ["http://127.0.0.1:8730/*"],

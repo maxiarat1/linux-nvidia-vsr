@@ -102,6 +102,9 @@ async def main():
                     dashboard,
                     "document.querySelector('#state-tag').textContent==='LIVE'",
                 )
+                first_frame_ms = await video.evaluate(
+                    "Number(document.querySelector('#local-nvidia-vsr').dataset.firstFrameMs)"
+                )
                 if args.on_demand:
                     assert health()["managed"] is True
                     await video.evaluate("document.querySelector('video').pause()")
@@ -179,6 +182,7 @@ async def main():
                 )
                 result = {
                     "dashboard_start_stop": True,
+                    "first_frame_ms": first_frame_ms,
                     "live_target_change_4k": True,
                     "hide_controls_keeps_playing": True,
                     "preview": True,

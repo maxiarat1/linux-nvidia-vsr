@@ -13,6 +13,7 @@ Read `docs/architecture.md`, `docs/performance.md`, `docs/api.md` and `CONTRIBUT
 - The normal pipeline is NV12 host staging → CUDA VSR → zero-extra-delay NVENC AV1 → extension worker GPU VideoDecoder → OffscreenCanvas. Host staging is real; do not advertise zero-copy.
 - Keep GPU work serialized, capture outstanding requests bounded, decoded-picture memory bounded, and source timestamps/seek epochs checked. Preserve original playback on errors.
 - Do not use expectedDisplayTime as the audio-input clock. See the documented A/V compensation bug. Device latency initially reported as zero is unknown, not a measurement.
+- Validate composited output, not only GPU/frame counters. The stable player sibling overlay must be above the native video stacking branch (YouTube uses z-index 10) and below player controls. Run tests/visible_output.py for overlay changes. LIVE requires fresh visible frames, not merely a connected engine.
 - Keep decode/render in the extension worker and its own visible canvas. Returning GPU frames through the site's agent cluster caused expensive synchronization; hidden-frame rAF and cross-origin canvas ownership failed in tests.
 - No arbitrary 1080p/4K caps. Preserve actual NVENC capability checks, memory checks and the 64 MiB transport guard. Auto resolution is not an fps controller.
 - Only the project-owned isolated profile may be closed automatically. Never edit or restart a user's regular browser without their authorization. Do not delete cached workers that another profile may still use.

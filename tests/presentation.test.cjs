@@ -2,6 +2,29 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
+vm.runInThisContext(fs.readFileSync("extension/popup-state.js", "utf8"));
+test("Live means enhanced frames are visible, not merely engine connected", () => {
+  const s = {
+    video: true,
+    active: true,
+    starting: true,
+    tabVisible: true,
+    presenting: false,
+  };
+  assert.equal(VsrPopupState(s).kind, "starting");
+  assert.equal(VsrPopupState({ ...s, starting: false }).kind, "waiting");
+  assert.equal(
+    VsrPopupState({ ...s, starting: false, presenting: true }).kind,
+    "live",
+  );
+  assert.equal(VsrPopupState({ ...s, paused: true }).kind, "paused");
+  assert.equal(VsrPopupState({ ...s, tabVisible: false }).kind, "hidden");
+  assert.equal(VsrPopupState({ ...s, bypass: true }).kind, "original");
+  assert.equal(
+    VsrPopupState({ ...s, active: false, starting: false }).tag,
+    "OFF",
+  );
+});
 for (const name of ["resolution", "presentation-clock"])
   vm.runInThisContext(fs.readFileSync(`extension/${name}.js`, "utf8"));
 

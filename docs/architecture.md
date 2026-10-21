@@ -25,6 +25,16 @@ A pipeline can average 60 fps while displaying pictures in bunches. The earlier 
 
 A canvas transferred from the page into a worker in a different agent cluster did not receive the expected worker animation ticks in the tested browser. A hidden iframe also stopped animation ticks. The current overlay is a visible, pointer-transparent extension frame owning its OffscreenCanvas. The frame is anchored to a stable player ancestor, because moving an iframe reloads its document and invalidates its transferred port. A reload reconnects using a fresh authorization grant and channel.
 
+### A painted frame can still be hidden under the original
+
+The stable YouTube player parent fixed iframe reloads, but introduced a display-layer regression: its native video branch has `z-index:10` while our sibling overlay used `z-index:1`. GPU processing and worker canvas paints could advance normally underneath the original picture. Frame counters and successful decoder events did not validate the final visible result.
+
+`position()` now finds the video's stacking branch under the overlay parent and places the overlay one level above it. On the tested YouTube player that is layer 11, with captions/player controls on higher layers. The overlay remains pointer-transparent. Do not replace this with an arbitrarily high global z-index that hides player controls.
+
+`tests/visible_output.py` reproduces the nested video layer and higher player controls. A temporary marker in the actual extension iframe proves screenshot pixels are occluded with the old layer order and visible with the corrected order. The test then proves the real enhanced canvas covers that marker, player controls remain visible, and turning VSR off immediately removes the overlay while the original continues playing. Screenshot comparisons allow small display color-management shifts.
+
+The dashboard distinguishes enabled intent from current presentation. `LIVE` requires fresh presented frames and a visible, playing video; a connected engine alone is insufficient. The first enhanced frame ends startup and records its elapsed time. Paused, hidden, waiting and above-target bypass states explicitly explain why the original is showing. Off mode labels the source as original instead of showing an enhanced-resolution arrow.
+
 ### Which clock to use
 
 `expectedDisplayTime` includes the native player's A/V compensation. Using it as the audio-input clock counted that compensation again and failed the flash/beep check. `presentation-clock.js` reconstructs the media-input timeline from `video.currentTime` sampled during frame callbacks. Median filtering removes timing-read noise; limited drift correction avoids moving frame deadlines abruptly.

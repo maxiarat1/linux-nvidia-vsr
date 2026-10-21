@@ -46,7 +46,7 @@ VSR_BROWSER=/absolute/path/to/browser ./vsr browser
 3. Check enhanced fps and processing time. Reduce target or AI quality if processing cannot keep pace.
 4. Optional page controls include a hold-to-compare **Original** button; enable them with **Show controls on video page**. The floating panel is hidden by default. Hiding page controls from the dashboard keeps enhancement running.
 
-For YouTube, open a video in this browser window. Its selected source resolution is independent of the enhancement target. Auto recalculates when the source resolution changes. Preferences persist; enhancement is opt-in for each video.
+For YouTube, open a video in this browser window. Its selected source resolution is independent of the enhancement target. Auto recalculates when the source resolution changes. Preferences persist; enhancement is opt-in for each video. The dashboard shows **Starting** until the first enhanced frame, then a green **LIVE** indicator. Paused/hidden videos and original-resolution bypass are labeled explicitly. Turning off restores the original picture immediately; the helper’s idle-exit grace period does not delay that switch.
 
 ## Use your normal browser
 

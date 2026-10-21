@@ -202,6 +202,11 @@ h2 {
   letter-spacing: 0.5px;
 }
 
+.state-tag.live {
+  background: #e4f3e9;
+  color: #20663b;
+}
+
 .resolution-summary {
   margin-top: 4px;
   color: var(--muted);

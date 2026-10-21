@@ -36,9 +36,12 @@ bash -c 'source scripts/env.sh; uv pip install --python .venv/bin/python -r requ
 ./vsr start
 bash -c 'source scripts/env.sh; .venv/bin/python tests/smoke_api.py'
 bash -c 'source scripts/env.sh; .venv/bin/python tests/gpu_transport.py'
+bash -c 'source scripts/env.sh; .venv/bin/python -m tests.visible_output'
 bash -c 'source scripts/env.sh; .venv/bin/python -m tests.dashboard --on-demand'
 bash -c 'source scripts/env.sh; .venv/bin/python -m tests.startup'
 ```
+
+The visible-output check verifies composited pixels and player-control layering; a frame counter alone missed a real YouTube overlay occlusion bug. It also checks immediate stop and records first-frame startup timing.
 
 The dashboard check uses actual GPU output, controls the extension UI, changes the live target to 4K, verifies that hiding page controls keeps playback running, and checks stop. `--on-demand` stops the preloaded fixture service, verifies native browser startup without terminal intervention, pauses for effect unload, resumes real GPU frames, then waits for the managed process to exit after stop. Browser checks create temporary profiles inside `.state/`. They can open visible windows. Do not run concurrent GPU benchmarks.
 
