@@ -86,6 +86,15 @@ async def main():
                 assert await video.evaluate(
                     "document.querySelector('#local-nvidia-vsr').style.display==='none'"
                 )
+                # Both compact mode buttons must reach real tab settings.
+                await dashboard.click("#mode-manual")
+                await wait(dashboard, "!document.querySelector('#scale-row').hidden")
+                await dashboard.select_option("#scale", "1.5")
+                await wait(
+                    dashboard, "document.querySelector('#factor').textContent==='1.5×'"
+                )
+                await dashboard.click("#mode-auto")
+                await wait(dashboard, "!document.querySelector('#target-row').hidden")
                 await dashboard.select_option("#target", "1080")
                 await wait(
                     dashboard,

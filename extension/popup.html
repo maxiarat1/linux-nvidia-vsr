@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <title>NVIDIA VSR · Video controls</title>
     <link rel="stylesheet" href="popup.css" />
     <script src="popup-state.js" defer></script>
@@ -12,19 +13,11 @@
     <main>
       <header class="app-header">
         <div class="brand">
-          <svg
-            class="app-mark"
-            viewBox="0 0 32 32"
-            fill="none"
-            aria-hidden="true"
-          >
-            <rect x="3.5" y="6.5" width="25" height="19" rx="4" />
-            <path d="m13 12 7 4-7 4v-8Z" />
+          <svg class="app-mark" viewBox="0 0 18 18" aria-hidden="true">
+            <rect width="18" height="18" rx="5" />
+            <path d="M6 5.2v7.8L13 9.1Z" />
           </svg>
-          <div>
-            <h1>NVIDIA VSR</h1>
-            <p>Video Super Resolution</p>
-          </div>
+          <h1>NVIDIA VSR</h1>
         </div>
         <button
           id="expand"
@@ -33,91 +26,90 @@
           aria-label="Open dashboard in a tab"
         >
           <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path d="M11.5 3.5h5v5m-.5-4.5-7 7M8.5 4.5h-4v11h11v-4" />
+            <path d="M5 5h10v10M15 5 5 15" />
           </svg>
         </button>
       </header>
-
-      <div class="connection" aria-live="polite">
-        <span id="engine-dot" class="dot" aria-hidden="true"></span>
-        <span id="engine">Checking local engine…</span>
-        <button id="engine-action" class="text-button" hidden>
-          Retry connection
-        </button>
-      </div>
-
-      <section class="video-card" aria-labelledby="state-title">
-        <div class="state-heading">
-          <h2 id="state-title">Enhancement off</h2>
-          <span id="state-tag" class="state-tag">STANDBY</span>
+      <section class="controls" aria-label="Video enhancement">
+        <div class="vsr-row">
+          <span class="vsr-label">VSR</span>
+          <span id="state-tag" class="state-tag" aria-live="polite">OFF</span>
+          <button
+            id="toggle"
+            class="switch"
+            role="switch"
+            aria-checked="false"
+            aria-label="Enable for this video"
+            aria-describedby="state-title"
+            disabled
+          >
+            <span class="switch-thumb"></span>
+          </button>
+          <h2 id="state-title" class="sr-only">Enhancement off</h2>
         </div>
-        <p id="summary" class="resolution-summary">
-          Play a video in this tab to begin.
-        </p>
-        <button id="toggle" class="primary" disabled>
-          Enable for this video
-        </button>
-      </section>
-
-      <section class="settings" aria-labelledby="settings-title">
-        <div class="section-heading">
-          <h3 id="settings-title">Picture settings</h3>
-          <span id="factor">AUTO SCALE</span>
+        <div class="setting-row scaling-row">
+          <span id="scaling-label">Scaling</span>
+          <div class="segmented" role="group" aria-labelledby="scaling-label">
+            <button id="mode-auto" aria-pressed="true">Auto</button>
+            <button id="mode-manual" aria-pressed="false">Manual</button>
+          </div>
         </div>
-        <div class="field">
-          <label for="scale">Scaling</label>
-          <select id="scale" aria-describedby="resolution-note">
-            <option value="auto">Auto · match target resolution</option>
-            <option value="1">Manual · 1×</option>
-            <option value="1.5">Manual · 1.5×</option>
-            <option value="2">Manual · 2×</option>
-            <option value="3">Manual · 3×</option>
-            <option value="4">Manual · 4×</option>
+        <div id="target-row" class="setting-row">
+          <label for="target">Target resolution</label>
+          <select id="target" aria-describedby="resolution-note">
+            <option value="720">720p</option>
+            <option value="1080">1080p</option>
+            <option value="1440">1440p</option>
+            <option value="2160" selected>4K</option>
+            <option value="4320">8K</option>
           </select>
         </div>
-        <div class="fields">
-          <div class="field">
-            <label for="target">Target resolution</label>
-            <select id="target">
-              <option value="720">720p · HD</option>
-              <option value="1080">1080p · Full HD</option>
-              <option value="1440">1440p · QHD</option>
-              <option value="2160" selected>4K · UHD</option>
-              <option value="4320">8K · UHD</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="quality">AI quality</label>
-            <select id="quality">
-              <option value="LOW">Low · fastest</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH" selected>High</option>
-              <option value="ULTRA">Ultra</option>
-            </select>
-          </div>
+        <div id="scale-row" class="setting-row" hidden>
+          <label for="scale">Scale factor</label>
+          <select id="scale" aria-describedby="resolution-note">
+            <option value="auto" hidden>Auto</option>
+            <option value="1">1×</option>
+            <option value="1.5">1.5×</option>
+            <option value="2">2×</option>
+            <option value="3">3×</option>
+            <option value="4">4×</option>
+          </select>
         </div>
-        <p id="resolution-note" class="hint">Aspect ratio is preserved.</p>
+        <div class="setting-row quality-row">
+          <label for="quality">AI quality</label>
+          <select id="quality">
+            <option value="LOW">Low</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HIGH" selected>High</option>
+            <option value="ULTRA">Ultra</option>
+          </select>
+        </div>
       </section>
-
       <section class="metrics" aria-label="Live performance">
         <div class="metric">
-          <span>Enhanced rate</span>
-          <strong id="fps">—<small> fps</small></strong>
+          <strong id="fps">—<small> fps</small></strong
+          ><span>Enhanced rate</span>
         </div>
         <div class="metric">
-          <span>Processing time</span>
-          <strong id="latency">—<small> ms</small></strong>
+          <strong id="latency">—<small> ms</small></strong
+          ><span>Processing time</span>
         </div>
         <div class="metric">
-          <span>Added audio delay</span>
-          <strong id="audio">—<small> ms</small></strong>
+          <strong id="audio">—<small> ms</small></strong
+          ><span>Added audio delay</span>
         </div>
       </section>
-
-      <div class="feedback">
+      <div id="feedback" class="feedback" hidden>
         <p id="message" role="status" aria-live="polite">
           Connecting to the active tab…
         </p>
+        <div class="connection">
+          <span id="engine-dot" class="dot" aria-hidden="true"></span
+          ><span id="engine">Checking local engine…</span>
+          <button id="engine-action" class="text-button" hidden>
+            Retry connection
+          </button>
+        </div>
         <div id="help" hidden>
           <p>One-time setup in the project folder:</p>
           <code>./vsr install-browser-helper</code>
@@ -129,16 +121,21 @@
           >
         </div>
       </div>
-      <footer>
-        <label class="checkbox" for="panel">
-          <input id="panel" type="checkbox" />
-          <span>Show controls on video page</span>
-        </label>
-        <span class="local-label">Local processing</span>
-      </footer>
-      <p id="preview-note" hidden>
-        Interactive preview · simulated video and metrics
-      </p>
+      <section class="details" aria-label="Video details">
+        <p id="summary">Play a video in this tab to begin.</p>
+        <p>
+          <span id="factor">AUTO SCALE</span> ·
+          <span id="resolution-note">Aspect ratio is preserved.</span>
+        </p>
+        <label class="checkbox" for="panel"
+          ><input id="panel" type="checkbox" /><span
+            >Show controls on video page</span
+          ></label
+        >
+      </section>
     </main>
+    <p id="preview-note" hidden>
+      Interactive preview · simulated video and metrics
+    </p>
   </body>
 </html>

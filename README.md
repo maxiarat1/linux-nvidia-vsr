@@ -6,7 +6,7 @@ The extension keeps the original player controls and audio, enhances decoded fra
 
 This is an independent, experimental integration using NVIDIA's VFX SDK. It does not enable the Windows driver's browser VSR switch. The AI effect is NVIDIA VideoSuperRes; there is no substitute upscaler or silent fallback. NVIDIA runtime software has separate licensing.
 
-<p align="center"><img src="examples/dashboard.png" width="390" alt="Extension dashboard showing Auto 4K, High quality, frame rate and processing time. Sample metrics." /></p>
+<p align="center"><img src="examples/dashboard.png" width="326" alt="Light extension popup: Auto 4K and High quality. Simulated metrics." /> <img src="examples/dashboard-dark.png" width="326" alt="Dark extension popup: Manual 2× and High quality. Simulated metrics." /></p>
 
 ## Status and requirements
 
@@ -44,9 +44,11 @@ VSR_BROWSER=/absolute/path/to/browser ./vsr browser
 1. Play the video, then open **NVIDIA VSR** in the extension toolbar.
 2. Leave scaling on **Auto**, choose **4K** and **High**, then enable enhancement.
 3. Check enhanced fps and processing time. Reduce target or AI quality if processing cannot keep pace.
-4. Optional page controls include a hold-to-compare **Original** button; enable them with **Show controls on video page**. The floating panel is hidden by default. Hiding page controls from the dashboard keeps enhancement running.
+4. Optional page controls include a hold-to-compare **Original** button; open the expanded dashboard (↗) and enable **Show controls on video page**. The floating panel is hidden by default. Hiding page controls from the dashboard keeps enhancement running.
 
-For YouTube, open a video in this browser window. Its selected source resolution is independent of the enhancement target. Auto recalculates when the source resolution changes. Preferences persist; enhancement is opt-in for each video. The dashboard shows **Starting** until the first enhanced frame, then a green **LIVE** indicator. Paused/hidden videos and original-resolution bypass are labeled explicitly. Turning off restores the original picture immediately; the helper’s idle-exit grace period does not delay that switch.
+The compact popup follows the browser-reported light/dark preference automatically, including changes while open. Custom Chrome theme accent colors are not exposed by the [public extension APIs](https://developer.chrome.com/docs/extensions/reference/api); the popup uses its own matching light/dark palette. Auto selects a target resolution; Manual selects a scale factor. The expanded dashboard also shows source/output dimensions and optional page controls.
+
+For YouTube, open a video in this browser window. Its selected source resolution is independent of the enhancement target. Auto recalculates when the source resolution changes. Preferences persist; enhancement is opt-in for each video. The dashboard shows **Starting** until the first enhanced frame, then a **LIVE** indicator. Paused/hidden videos and original-resolution bypass are labeled explicitly. Turning off restores the original picture immediately; the helper’s idle-exit grace period does not delay that switch.
 
 ## Use your normal browser
 

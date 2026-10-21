@@ -9,6 +9,9 @@ let tabId,
   bridgeReady = false,
   busy = false,
   connectionError = null;
+let manualScale = "2";
+const dashboard = new URLSearchParams(location.search).has("tab");
+document.body.classList.toggle("dashboard", dashboard);
 const sample = {
   video: true,
   active: false,
@@ -78,6 +81,19 @@ async function request(action, extra = {}) {
   return result;
 }
 function message(text, error = false) {
+  el("feedback").hidden =
+    !error &&
+    !busy &&
+    !dashboard &&
+    ![
+      "empty",
+      "paused",
+      "hidden",
+      "starting",
+      "waiting",
+      "original",
+      "compare",
+    ].includes(VsrPopupState(state || {}).kind);
   el("message").textContent = text;
   el("message").classList.toggle("error", error);
 }
@@ -112,17 +128,30 @@ function render(s) {
   for (const id of ["quality", "scale", "target"]) el(id).value = s[id];
   el("target").disabled = s.scale !== "auto" || busy;
   el("quality").disabled = el("scale").disabled = busy;
+  const auto = s.scale === "auto";
+  if (!auto) manualScale = String(s.scale);
+  el("target-row").hidden = !auto;
+  el("scale-row").hidden = auto;
+  for (const mode of ["auto", "manual"]) {
+    el(`mode-${mode}`).disabled = busy;
+    el(`mode-${mode}`).setAttribute(
+      "aria-pressed",
+      String((mode === "auto") === auto),
+    );
+  }
   el("panel").checked = s.panelVisible;
   el("panel").disabled = busy;
   // An offline engine is normal: the native helper starts it on Enable.
   el("toggle").disabled = busy || !s.video || !bridgeReady;
-  el("toggle").textContent = s.starting
+  const toggleLabel = s.starting
     ? "Cancel start"
     : s.active
       ? "Turn off enhancement"
       : "Enable for this video";
+  el("toggle").setAttribute("aria-label", toggleLabel);
+  el("toggle").title = toggleLabel;
   el("toggle").classList.toggle("on", s.active);
-  el("toggle").setAttribute("aria-pressed", String(s.active));
+  el("toggle").setAttribute("aria-checked", String(s.active));
   el("state-tag").textContent = view.tag;
   el("state-tag").classList.toggle("live", view.kind === "live");
   el("state-title").textContent = view.title;
@@ -209,10 +238,20 @@ async function act(action, extra = {}) {
   if (busy) return;
   busy = true;
   connectionError = null;
-  for (const id of ["toggle", "quality", "scale", "target", "panel"])
+  for (const id of [
+    "toggle",
+    "quality",
+    "scale",
+    "target",
+    "panel",
+    "mode-auto",
+    "mode-manual",
+  ])
     el(id).disabled = true;
-  el("toggle").textContent =
-    action === "start" ? "Starting enhancement…" : "Applying…";
+  el("toggle").setAttribute(
+    "aria-label",
+    action === "start" ? "Starting enhancement…" : "Applying…",
+  );
   if (action === "start")
     message("Starting the local engine and connecting this video…");
   connection();
@@ -242,6 +281,15 @@ for (const id of ["quality", "scale", "target"])
       ),
     }),
   );
+for (const mode of ["auto", "manual"])
+  el(`mode-${mode}`).addEventListener("click", () => {
+    if (busy || !state) return;
+    const scale = mode === "auto" ? "auto" : manualScale;
+    if (scale === state.scale) return;
+    act("settings", {
+      settings: { quality: state.quality, target: state.target, scale },
+    });
+  });
 el("panel").addEventListener("change", () =>
   act("panel", { visible: el("panel").checked }),
 );
@@ -262,7 +310,7 @@ el("expand").addEventListener("click", () => {
 (async () => {
   if (preview) {
     el("preview-note").hidden = false;
-    el("expand").hidden = true;
+    el("expand").disabled = true;
   } else {
     const fixed = new URLSearchParams(location.search).get("tab");
     tabId = fixed
