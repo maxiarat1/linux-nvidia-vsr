@@ -9,11 +9,19 @@ from scripts.native_host import handle, read_message, write_message
 
 class BrowserHelper(unittest.TestCase):
     def test_worker_changes_also_change_chromium_version(self):
-        first = local_version("0.8.0", "abc123450000")
-        second = local_version("0.8.0", "def123450000")
-        self.assertNotEqual(first, second)
-        self.assertEqual(first, local_version("0.8.0", "abc123450000"))
+        previous = {"version": "0.8.50000.65000", "digest": "old"}
+        first = local_version("0.9.0", "ffff12340000", previous)
+        previous = {"version": first, "digest": "ffff12340000"}
+        second = local_version("0.9.0", "000012340000", previous)
+        parts = lambda value: tuple(map(int, value.split(".")))
+        self.assertGreater(parts(first), parts("0.8.50000.65000"))
+        self.assertGreater(parts(second), parts(first))
+        self.assertEqual(first, local_version("0.9.0", "ffff12340000", previous))
         self.assertTrue(all(0 <= int(part) <= 65535 for part in first.split(".")))
+
+    def test_builds_never_downgrade_on_branch_switch_or_counter_rollover(self):
+        previous = {"version": "0.9.1.65535", "digest": "previous"}
+        self.assertEqual(local_version("0.8.0", "next", previous), "0.9.2.0")
 
     def test_native_protocol_roundtrip_and_bounds(self):
         data = io.BytesIO()

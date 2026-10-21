@@ -1,4 +1,5 @@
 import argparse
+import fcntl
 import hashlib
 import json
 import os
@@ -59,6 +60,13 @@ def browser_pid():
 
 
 def configure_extension():
+    STATE.mkdir(exist_ok=True)
+    with (STATE / "extension-build.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        _configure_extension()
+
+
+def _configure_extension():
     # Importing the app creates the random local token with mode 0600.
     from vsr_service.app import TOKEN
 
@@ -84,7 +92,17 @@ def configure_extension():
     )
     digest = hashlib.sha256(worker.encode()).hexdigest()[:20]
     release = manifest["version"]
-    manifest["version"] = local_version(release, digest)
+    version_file = STATE / "extension-build.json"
+    previous = json.loads(version_file.read_text()) if version_file.exists() else None
+    if manifest_path.exists():
+        installed = json.loads(manifest_path.read_text())["version"]
+        # A surviving generated manifest also preserves the last version if
+        # the private build record was removed. Never assign random versions.
+        if previous is None or tuple(map(int, installed.split("."))) > tuple(
+            map(int, previous["version"].split("."))
+        ):
+            previous = {"version": installed}
+    manifest["version"] = local_version(release, digest, previous)
     manifest["version_name"] = release
     generated = ROOT / "extension/generated"
     generated.mkdir(exist_ok=True)
@@ -96,6 +114,11 @@ def configure_extension():
     encoded = json.dumps(manifest, indent=2) + "\n"
     if not manifest_path.exists() or manifest_path.read_text() != encoded:
         manifest_path.write_text(encoded)
+    record = {"version": manifest["version"], "digest": digest}
+    temporary = version_file.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(record) + "\n")
+    temporary.chmod(0o600)
+    temporary.replace(version_file)
     # Keep old entries while a browser may still need them. They contain the
     # same private config and are removed on the next configure with it closed.
     # Do not prune here: another profile may still be using an older build.
