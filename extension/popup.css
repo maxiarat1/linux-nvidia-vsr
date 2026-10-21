@@ -1,0 +1,294 @@
+:root {
+  color-scheme: dark;
+  font:
+    13px/1.5 system-ui,
+    -apple-system,
+    sans-serif;
+  color: #e8eef4;
+  background: #0d131b;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 390px;
+}
+main {
+  width: 390px;
+  padding: 22px;
+  margin: auto;
+}
+header,
+.brand,
+.connection,
+.section-heading,
+.eyebrow,
+footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand {
+  gap: 11px;
+  justify-content: start;
+}
+.mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #91e5b54d;
+  border-radius: 12px;
+  background: #91e5b514;
+  color: #a4f0c7;
+  font-size: 26px;
+}
+h1 {
+  font-size: 17px;
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+header p {
+  font-size: 11px;
+  margin: 0;
+  color: #8e9dae;
+}
+button,
+select,
+input {
+  font: inherit;
+}
+button,
+select {
+  border: 1px solid #303f50;
+  border-radius: 9px;
+  color: inherit;
+  background: #172230;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid #a4f0c7;
+  outline-offset: 3px;
+}
+.icon {
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
+  background: transparent;
+}
+.connection {
+  justify-content: start;
+  gap: 7px;
+  margin: 20px 0 13px;
+  color: #a7b5c4;
+  font-size: 11px;
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d49c61;
+}
+.dot.online {
+  background: #a4f0c7;
+  box-shadow: 0 0 8px #a4f0c744;
+}
+.local {
+  margin-left: auto;
+  letter-spacing: 1px;
+  font-size: 9px;
+  color: #77899d;
+}
+.hero {
+  padding: 18px;
+  border: 1px solid #31463f;
+  background: linear-gradient(125deg, #1c302b, #17232d);
+  border-radius: 14px;
+}
+.eyebrow {
+  font-size: 9px;
+  letter-spacing: 1.4px;
+  color: #94b5a7;
+}
+.eyebrow span {
+  font-size: 8px;
+  letter-spacing: 1px;
+  border: 1px solid #6486765c;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+h2 {
+  font-size: 21px;
+  line-height: 1.2;
+  letter-spacing: -0.7px;
+  margin: 16px 0 8px;
+}
+.hero p {
+  margin: 0;
+  color: #b0c1bd;
+  font-size: 12px;
+  min-height: 18px;
+}
+.primary {
+  width: 100%;
+  margin-top: 19px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 13px;
+  font-weight: 650;
+  background: #a4f0c7;
+  color: #10221a;
+  border: 0;
+}
+.primary.on {
+  background: #263e34;
+  color: #b9f0d0;
+  border: 1px solid #5b8b72;
+}
+.settings {
+  margin-top: 22px;
+}
+.section-heading {
+  margin-bottom: 13px;
+}
+h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+.section-heading span {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #8fbea4;
+}
+label {
+  display: block;
+  font-size: 11px;
+  color: #a4b2c1;
+  margin-bottom: 5px;
+}
+select {
+  width: 100%;
+  padding: 9px 10px;
+  cursor: pointer;
+}
+select:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+.hint {
+  font-size: 10px;
+  color: #7f91a5;
+  margin: 9px 0 0;
+}
+.metrics {
+  margin-top: 20px;
+  border-top: 1px solid #243141;
+  border-bottom: 1px solid #243141;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 15px 0;
+  gap: 6px;
+}
+.metrics span {
+  display: block;
+  font-size: 9px;
+  color: #899caf;
+}
+.metrics strong {
+  display: block;
+  font-size: 20px;
+  font-weight: 500;
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.metrics small {
+  font-size: 10px;
+  color: #7e91a5;
+}
+#message {
+  font-size: 11px;
+  color: #9fb0c1;
+  margin: 14px 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+#message.error {
+  color: #f0b899;
+}
+#help {
+  border-radius: 8px;
+  padding: 11px;
+  background: #2d251f;
+  font-size: 11px;
+  color: #dcc6b1;
+}
+code {
+  display: block;
+  padding: 7px 0;
+  font-size: 12px;
+  color: #ffe4be;
+}
+#help p {
+  margin: 0;
+  font-size: 10px;
+}
+footer {
+  margin-top: 14px;
+}
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 10px;
+  cursor: pointer;
+}
+input {
+  accent-color: #a4f0c7;
+}
+.version {
+  font-size: 10px;
+  color: #61758a;
+}
+#preview-note {
+  text-align: center;
+  color: #8ca199;
+  font-size: 10px;
+  margin: 14px 0 0;
+}
+[hidden] {
+  display: none !important;
+}
+@media (min-width: 600px) {
+  body {
+    padding: 35px 0;
+  }
+  main {
+    width: 430px;
+    border: 1px solid #263545;
+    border-radius: 18px;
+    background: #111a25;
+    box-shadow: 0 24px 90px #0005;
+  }
+  h2 {
+    font-size: 25px;
+  }
+}

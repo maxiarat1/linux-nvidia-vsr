@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>NVIDIA VSR dashboard preview</title>
+    <style>
+      body {
+        margin: 0;
+        background: #080d13;
+        color: #a2b3c3;
+        font: 13px system-ui;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+      }
+      iframe {
+        border: 0;
+        width: 430px;
+        height: 740px;
+        max-width: 100vw;
+      }
+      p {
+        text-align: center;
+        margin: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <p>Extension UI preview · simulated controls and metrics</p>
+      <iframe
+        src="../extension/popup.html?preview=1"
+        title="NVIDIA VSR extension dashboard preview"
+      ></iframe>
+    </div>
+  </body>
+</html>

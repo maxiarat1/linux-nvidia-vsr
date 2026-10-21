@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  />
+  <title>Local NVIDIA VSR</title>
+  <style>
+    body {
+      background: #101419;
+      color: #e7edf3;
+      font: 16px system-ui;
+      max-width: 1120px;
+      margin: 48px auto;
+      padding: 0 24px;
+    }
+    h1 {
+      font-size: 32px;
+    }
+    p {
+      color: #b1becb;
+      line-height: 1.6;
+    }
+    video {
+      width: 100%;
+      display: block;
+    }
+    .player {
+      position: relative;
+      background: #000;
+      max-width: 1040px;
+    }
+    a {
+      color: #a7db76;
+    }
+    code {
+      background: #26303a;
+      padding: 3px 6px;
+      border-radius: 4px;
+    }
+    button {
+      background: #425e24;
+      color: white;
+      border: 0;
+      border-radius: 6px;
+      padding: 10px;
+      font: inherit;
+      cursor: pointer;
+    }
+    #state {
+      font: 13px monospace;
+      white-space: pre-wrap;
+    }
+  </style>
+  <h1>NVIDIA VSR, running locally</h1>
+  <p>
+    This 640×360 motion test plays in Helium. The extension sends its video
+    frames to NVIDIA's VSR engine on your RTX GPU and draws the enhanced result
+    over the source. Playback controls remain with the original player; VSR
+    follows the audio output clock.
+  </p>
+  <div class="player">
+    <video
+      id="video"
+      src="/demo.mp4"
+      controls
+      autoplay
+      muted
+      loop
+      playsinline
+    ></video>
+  </div>
+  <p>
+    Open the extension toolbar button and choose
+    <strong>Enable enhancement</strong>, or use <strong>VSR OFF</strong> in the
+    page controls. Hold <strong>Original</strong> to compare. If the panel is
+    missing, launch this page with <code>./vsr browser</code>.
+  </p>
+  <p>
+    Frames pass through browser memory. Its output adds processing latency and
+    uses GPU AV1 compression. The AI processing itself uses NVIDIA
+    VideoSuperRes; no replacement upscaler is used.
+  </p>
+  <p>
+    <a href="https://www.youtube.com/watch?v=aqz-KE-bpKQ"
+      >Try Big Buck Bunny on YouTube</a
+    >
+    · Choose a source resolution, select a target in the extension, then enable
+    VSR.
+  </p>
+  <pre id="state">Checking local engine…</pre>
+  <script src="/demo.js"></script>
+</html>

@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Local NVIDIA VSR",
+  "version": "0.7.0",
+  "description": "Send a video's frames to your local NVIDIA VSR engine. Opt-in per tab with audio-clock synchronization.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://127.0.0.1:8730/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "NVIDIA VSR controls",
+    "default_popup": "popup.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["bridge.html"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*", "http://127.0.0.1:8730/*"],
+      "js": [
+        "audio-sync.js",
+        "presentation-clock.js",
+        "resolution.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

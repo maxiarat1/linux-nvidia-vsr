@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NVIDIA VSR · Video controls</title>
+    <link rel="stylesheet" href="popup.css" />
+    <script src="popup.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="brand">
+          <span class="mark" aria-hidden="true">↗</span>
+          <div>
+            <h1>NVIDIA VSR</h1>
+            <p>Local video enhancement</p>
+          </div>
+        </div>
+        <button
+          id="expand"
+          class="icon"
+          title="Open dashboard in a tab"
+          aria-label="Open dashboard in a tab"
+        >
+          ↗
+        </button>
+      </header>
+      <div class="connection">
+        <span id="engine-dot" class="dot"></span
+        ><span id="engine">Checking local engine…</span
+        ><span class="local">ON DEVICE</span>
+      </div>
+      <section class="hero" aria-labelledby="state-title">
+        <div class="eyebrow">
+          CURRENT VIDEO <span id="state-tag">STANDBY</span>
+        </div>
+        <h2 id="state-title">Ready for a clearer picture</h2>
+        <p id="summary">Play a video in this tab to begin.</p>
+        <button id="toggle" class="primary" disabled>
+          Enable enhancement <span aria-hidden="true">↗</span>
+        </button>
+      </section>
+      <section class="settings" aria-label="Enhancement settings">
+        <div class="section-heading">
+          <h3>Enhancement</h3>
+          <span id="factor">AUTO SCALE</span>
+        </div>
+        <label for="scale">Scaling mode</label>
+        <select id="scale">
+          <option value="auto">Auto · fit target resolution</option>
+          <option value="1">Manual · 1×</option>
+          <option value="1.5">Manual · 1.5×</option>
+          <option value="2">Manual · 2×</option>
+          <option value="3">Manual · 3×</option>
+          <option value="4">Manual · 4×</option>
+        </select>
+        <div class="fields">
+          <div>
+            <label for="target">Target resolution</label
+            ><select id="target">
+              <option value="720">720p HD</option>
+              <option value="1080">1080p Full HD</option>
+              <option value="1440">1440p QHD</option>
+              <option value="2160" selected>4K UHD</option>
+              <option value="4320">8K UHD</option>
+            </select>
+          </div>
+          <div>
+            <label for="quality">AI quality</label
+            ><select id="quality">
+              <option value="LOW">Low · fastest</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH" selected>High</option>
+              <option value="ULTRA">Ultra</option>
+            </select>
+          </div>
+        </div>
+        <p id="resolution-note" class="hint">
+          Auto preserves the video's aspect ratio.
+        </p>
+      </section>
+      <section class="metrics" aria-label="Live performance">
+        <div>
+          <span>Enhanced rate</span
+          ><strong id="fps">—<small> fps</small></strong>
+        </div>
+        <div>
+          <span>Processing</span
+          ><strong id="latency">—<small> ms</small></strong>
+        </div>
+        <div>
+          <span>Audio delay added</span
+          ><strong id="audio">—<small> ms</small></strong>
+        </div>
+      </section>
+      <div id="message" role="status" aria-live="polite">
+        Connecting to the active tab…
+      </div>
+      <div id="help" hidden>
+        Start the engine in the project folder:<code>./vsr start</code>
+        <p>The extension connects to 127.0.0.1:8730.</p>
+      </div>
+      <footer>
+        <label class="checkbox"
+          ><input id="panel" type="checkbox" /> Show controls on video
+          page</label
+        ><span class="version">v0.7</span>
+      </footer>
+      <p id="preview-note" hidden>
+        Interactive preview · sample metrics, no GPU connection
+      </p>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,32 @@
+# Private local runtime, GPU libraries, models, browser profiles and output.
+/.venv/
+/.cache/
+/.state/
+/logs/
+/artifacts/
+/dist/
+
+# Generated per-install extension credentials and content-addressed worker.
+/extension/config.js
+/extension/manifest.json
+/extension/generated/
+
+# Python, native build and editor output.
+__pycache__/
+*.py[cod]
+*.so
+*.so.new
+*.o
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+node_modules/
+.DS_Store
+*~
+*.swp
+.env
+.env.*
+!.env.example
+/.idea/
+/.vscode/

@@ -1,0 +1,20 @@
+name: Source checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: node --test tests/presentation.test.cjs
+      - run: python -m unittest tests.test_helium_install
+      - run: for file in extension/*.js; do node --check "$file"; done
+      - run: python -m compileall -q scripts vsr_service tests examples
+      - run: python -m json.tool extension/manifest.template.json > /dev/null
