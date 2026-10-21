@@ -20,7 +20,7 @@ Read [AGENTS.md](AGENTS.md) and [docs/architecture.md](docs/architecture.md) fir
 
 ```bash
 node --test tests/presentation.test.cjs
-python -m unittest tests.test_helium_install
+python -m unittest tests.test_helium_install tests.test_browser_helper
 for file in extension/*.js; do node --check "$file"; done
 python -m compileall -q scripts vsr_service tests examples
 ```
@@ -36,11 +36,11 @@ bash -c 'source scripts/env.sh; uv pip install --python .venv/bin/python -r requ
 ./vsr start
 bash -c 'source scripts/env.sh; .venv/bin/python tests/smoke_api.py'
 bash -c 'source scripts/env.sh; .venv/bin/python tests/gpu_transport.py'
-bash -c 'source scripts/env.sh; .venv/bin/python -m tests.dashboard'
+bash -c 'source scripts/env.sh; .venv/bin/python -m tests.dashboard --on-demand'
 bash -c 'source scripts/env.sh; .venv/bin/python -m tests.startup'
 ```
 
-The dashboard check uses actual GPU output, controls the extension UI, changes the live target to 4K, verifies that hiding page controls keeps playback running, and checks stop. Browser checks create temporary profiles inside `.state/`. They can open visible windows. Do not run concurrent GPU benchmarks.
+The dashboard check uses actual GPU output, controls the extension UI, changes the live target to 4K, verifies that hiding page controls keeps playback running, and checks stop. `--on-demand` stops the preloaded fixture service, verifies native browser startup without terminal intervention, pauses for effect unload, resumes real GPU frames, then waits for the managed process to exit after stop. Browser checks create temporary profiles inside `.state/`. They can open visible windows. Do not run concurrent GPU benchmarks.
 
 For source resolution switching and saved preferences, close the project-owned browser first:
 
@@ -61,6 +61,8 @@ For same-scene UI-load cadence comparison, use `--youtube --source-height 1080 -
 `tests/resolution_support.py` checks higher resolutions and recovery after an oversized request. `tests/codec_support.py --vaapi` inspects real Media decoder names, rather than trusting API capability flags. `scripts/probe_nvenc.py` reproduces the Python wrapper queue investigation; it is not the production encoder.
 
 ## Updates
+
+Do not call configure during runtime engine startup. A changed service-worker URL needs a changed Chromium manifest version; the generated local version handles this. Verify updates in an existing profile as well as a fresh test profile.
 
 After editing extension assets, run `./vsr configure`, then reload the extension and video page in your regular browser. `./vsr browser` automatically restarts only its isolated profile if its extension build changed. Never edit profile Preferences or delete generated workers while a browser is using them. No test should alter a regular profile or system packages.
 

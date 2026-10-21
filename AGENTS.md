@@ -7,7 +7,8 @@ Read `docs/architecture.md`, `docs/performance.md`, `docs/api.md` and `CONTRIBUT
 ## Invariants
 
 - Keep dependencies, SDK downloads, caches, credentials, generated media and test profiles inside this repository's ignored directories. Source `scripts/env.sh` using Bash for runtime commands.
-- Never commit `.state/token`, `extension/config.js`, generated workers, browser profiles, cookies, proprietary wheels, models or downloaded SDK source. `manifest.template.json` is the editable source manifest.
+- Never commit `.state/token`, `extension/config.js`, generated workers, browser profiles, cookies, proprietary wheels, models or downloaded SDK source. `manifest.template.json` is the editable source manifest. Hash changes must change both the generated worker URL and local four-part extension version; unchanged versions left a persistent profile with a disallowed stale worker. Runtime engine startup must not regenerate extension assets.
+- Preserve browser-native on-demand startup and idle GPU cleanup. Do not turn popup health polling into a GPU start or idle keepalive. Native messages accept fixed status/ensure commands, never arbitrary executables or frame data.
 - Bind the service to loopback. Preserve authentication, trusted-host/origin checks, per-tab expiring grants and the extension-owned bridge. Never pass the service token to page-world JavaScript or dashboard markup.
 - The normal pipeline is NV12 host staging → CUDA VSR → zero-extra-delay NVENC AV1 → extension worker GPU VideoDecoder → OffscreenCanvas. Host staging is real; do not advertise zero-copy.
 - Keep GPU work serialized, capture outstanding requests bounded, decoded-picture memory bounded, and source timestamps/seek epochs checked. Preserve original playback on errors.

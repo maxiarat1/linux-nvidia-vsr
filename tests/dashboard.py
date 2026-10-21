@@ -1,12 +1,17 @@
 """Exercise extension dashboard commands against real GPU video playback."""
 
 import asyncio
+import argparse
 import json
+import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 from playwright.async_api import async_playwright
 from scripts.browser_config import BROWSER, VIDEO_FLAGS, browser_environment
+from scripts.browser_helper import install
+from scripts.control import health
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -21,9 +26,13 @@ async def wait(page, expression, timeout=45000):
 
 
 async def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--on-demand", action="store_true")
+    args = parser.parse_args()
     with tempfile.TemporaryDirectory(
         prefix="dashboard-", dir=ROOT / ".state"
     ) as profile:
+        install(profile)
         async with async_playwright() as playwright:
             context = await playwright.chromium.launch_persistent_context(
                 profile,
@@ -46,6 +55,12 @@ async def main():
                 if await video.evaluate("document.querySelector('video').paused"):
                     await video.locator("video").click()
                 await wait(video, "!document.querySelector('video').paused")
+                if args.on_demand:
+                    subprocess.run(
+                        [str(ROOT / "vsr"), "stop"],
+                        check=True,
+                        stdout=subprocess.DEVNULL,
+                    )
                 worker = (
                     context.service_workers[0]
                     if context.service_workers
@@ -61,8 +76,12 @@ async def main():
                 )
                 await wait(
                     dashboard,
-                    "document.querySelector('#engine-dot').classList.contains('online') && !document.querySelector('#toggle').disabled",
+                    "!document.querySelector('#toggle').disabled",
                 )
+                if args.on_demand:
+                    assert not await dashboard.locator("#engine-dot").evaluate(
+                        "e=>e.classList.contains('online')"
+                    )
                 assert not await dashboard.locator("#panel").is_checked()
                 assert await video.evaluate(
                     "document.querySelector('#local-nvidia-vsr').style.display==='none'"
@@ -83,6 +102,23 @@ async def main():
                     dashboard,
                     "document.querySelector('#state-tag').textContent==='LIVE'",
                 )
+                if args.on_demand:
+                    assert health()["managed"] is True
+                    await video.evaluate("document.querySelector('video').pause()")
+                    for _ in range(200):
+                        if not health()["loaded"]:
+                            break
+                        await asyncio.sleep(0.1)
+                    else:
+                        raise TimeoutError(
+                            "Paused engine did not unload its GPU effect"
+                        )
+                    assert health()["active_streams"] == 1
+                    await video.evaluate("document.querySelector('video').play()")
+                    await wait(
+                        video,
+                        "Number(document.querySelector('#local-nvidia-vsr').dataset.frames)>60",
+                    )
                 # Hiding the page controls must leave enhancement running.
                 await dashboard.locator("#panel").check()
                 await video.bring_to_front()
@@ -120,6 +156,18 @@ async def main():
                     video,
                     "document.querySelector('#local-nvidia-vsr').dataset.active==='false'",
                 )
+                if args.on_demand:
+                    deadline = time.monotonic() + 40
+                    while time.monotonic() < deadline:
+                        try:
+                            health()
+                        except OSError:
+                            break
+                        await asyncio.sleep(0.2)
+                    else:
+                        raise TimeoutError(
+                            "Browser-managed engine did not shut down after idle"
+                        )
                 # The UI example has no engine or page dependency.
                 await dashboard.goto(
                     f"chrome-extension://{extension_id}/popup.html?preview=1"
@@ -134,6 +182,7 @@ async def main():
                     "live_target_change_4k": True,
                     "hide_controls_keeps_playing": True,
                     "preview": True,
+                    "browser_managed_start_pause_unload_resume_idle_exit": args.on_demand,
                 }
                 (ROOT / "artifacts/dashboard.json").write_text(
                     json.dumps(result, indent=2) + "\n"

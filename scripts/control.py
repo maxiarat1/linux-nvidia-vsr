@@ -11,6 +11,7 @@ import time
 import urllib.request
 from pathlib import Path
 from scripts.browser_config import VIDEO_FLAGS, BROWSER, browser_environment
+from scripts.extension_build import local_version
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE = ROOT / ".state"
@@ -82,6 +83,9 @@ def configure_extension():
         + source.replace('importScripts("config.js");\n', "", 1)
     )
     digest = hashlib.sha256(worker.encode()).hexdigest()[:20]
+    release = manifest["version"]
+    manifest["version"] = local_version(release, digest)
+    manifest["version_name"] = release
     generated = ROOT / "extension/generated"
     generated.mkdir(exist_ok=True)
     worker_path = generated / f"background-{digest}.js"
@@ -99,14 +103,17 @@ def configure_extension():
     # closing every browser that has loaded this directory.
 
 
-def start():
+def start(managed=False):
     native = STATE / "native/libvsr_nvenc.so"
     sources = [ROOT / "native/nvenc.cpp", ROOT / "scripts/build_nvenc.py"]
     if not native.exists() or any(
         p.stat().st_mtime > native.stat().st_mtime for p in sources
     ):
         subprocess.run([str(PYTHON), str(ROOT / "scripts/build_nvenc.py")], check=True)
-    configure_extension()
+    # Runtime startup must not rewrite an installed extension's worker URL.
+    # Explicit configure/build and install commands own extension updates.
+    if not (ROOT / "extension/manifest.json").exists():
+        configure_extension()
     if own_pid():
         print("Engine already running.")
         return
@@ -123,6 +130,7 @@ def start():
         stdout=log,
         stderr=subprocess.STDOUT,
         start_new_session=True,
+        env={**os.environ, "VSR_BROWSER_MANAGED": "1" if managed else "0"},
     )
     PIDFILE.write_text(str(child.pid))
     for _ in range(100):
@@ -173,7 +181,11 @@ def close_browser():
 
 
 def browser(url):
-    start()
+    from scripts.browser_helper import install
+
+    configure_extension()
+    install(STATE / "helium-profile")
+    start(managed=True)
     build = json.loads((ROOT / "extension/manifest.json").read_text())["background"][
         "service_worker"
     ]
@@ -227,7 +239,7 @@ def helium(url):
         raise SystemExit(
             "Helium launcher not found. Use ./vsr browser or load extension/ in your browser."
         )
-    start()
+    start(managed=True)
     with open(ROOT / "logs/helium-normal.log", "a") as log:
         subprocess.Popen(
             [wrapper, url],
@@ -248,6 +260,9 @@ def main():
         "command",
         choices=[
             "start",
+            "managed-start",
+            "install-browser-helper",
+            "remove-browser-helper",
             "stop",
             "status",
             "probe",
@@ -263,6 +278,15 @@ def main():
     args = parser.parse_args()
     if args.command == "start":
         start()
+    elif args.command == "managed-start":
+        start(managed=True)
+    elif args.command in {"install-browser-helper", "remove-browser-helper"}:
+        from scripts.browser_helper import install, remove
+
+        if args.command == "remove-browser-helper":
+            remove()
+        else:
+            install()
     elif args.command == "stop":
         stop()
     elif args.command == "configure":
@@ -290,6 +314,12 @@ def main():
             ],
             check=True,
         )
+        from scripts.browser_helper import install, remove
+
+        if args.command == "install-helium":
+            install()
+        else:
+            remove()
     elif args.command == "close-browser":
         close_browser()
 

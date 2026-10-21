@@ -579,7 +579,7 @@
         fail(
           `VSR startup timed out during ${host.dataset.stage}. Play the video, then retry.`,
         );
-    }, 10000);
+    }, 35000);
     try {
       await audioSync.attach(video);
     } catch (error) {
@@ -617,7 +617,9 @@
       const auth = await chrome.runtime.sendMessage({ type: "vsr-grant" });
       if (g !== generation || !active) return;
       if (!auth?.grant)
-        throw new Error("Extension changed. Reload it and refresh this page.");
+        throw new Error(
+          auth?.error || "Extension changed. Reload it and refresh this page.",
+        );
       if (auth.protocol !== 2)
         throw new Error(
           "VSR extension components do not match. Reopen the isolated browser with ./vsr browser.",

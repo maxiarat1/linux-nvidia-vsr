@@ -37,11 +37,25 @@ The queue is bounded to 32 decoded pictures / 1 GiB, independently of the four p
 
 Querying NVENC limits before a current CUDA context existed failed on a cold process, even when later requests succeeded after another diagnostic warmed CUDA. `gpu_video.py` initializes the runtime device before querying the current driver context, with a one-time primary-context fallback. Preserve the cold-first-request check.
 
-### Extension background cache failure
+### Extension background identity and the stopped-worker failure
 
-Helium retained an older unpacked extension service worker after a version update. The page content was new but the background lacked the expected runtime listener: `Could not establish connection. Receiving end does not exist.` A manifest version bump alone did not resolve it.
+Two separate unpacked-extension update failures were observed. First, an older background script remained cached while the page content was new; a distinct hashed worker URL prevented that source mix. Later, changing that URL while leaving the extension version unchanged left an existing normal profile registered to the previous URL. Chromium refused to start it (`DidStartWorkerFail …: 18`, `kErrorDisallowed`). The popup had no receiver even while `/health` said the GPU service was ready.
 
-`./vsr configure` now generates a private standalone worker with an asset/content hash in its URL and inlines config. Its build identity covers manifest, JS, HTML and CSS. The source manifest is `manifest.template.json`; installed `manifest.json`, `config.js` and generated workers are ignored. Old workers are kept because another regular profile might still need them. Close all relevant browsers before pruning private generated files. Reload extension and page after updating a regular profile.
+The exact latter failure was reproduced in an existing normal Helium profile: the registered worker was stopped, the browser rejected its start, and runtime messaging failed. Reloading a build with a new extension version restored the listener. Fresh-profile tests alone did not catch this persistent-profile problem.
+
+`./vsr configure` now produces both a hashed standalone worker URL and a matching four-part local extension version: the source release's major/minor plus 32 bits from the build digest. `version_name` retains the readable release. Asset changes therefore change the extension version as well as the worker URL. `./vsr start` and browser-native startup do **not** regenerate an installed extension. Runtime lifecycle must not mutate extension build identity. After a source update, explicitly configure, reload the extension and refresh the video tab; a browser restart also loads the changed version. Old private workers are retained for profiles still using them.
+
+The dashboard checks engine health directly and browser messaging independently. A stopped or rejected background worker offers **Reload extension**; a normally stopped engine leaves **Enable for this video** available. The UI no longer treats both conditions as “start the engine.”
+
+Relevant Chromium sources: [status codes](https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/public/common/service_worker/service_worker_status_code.h) and [extension worker URL checks](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/chrome/browser/extensions/chrome_content_browser_client_extensions_part.cc).
+
+### Browser-managed engine lifecycle
+
+The browser starts `scripts/native_host.sh` through [native messaging](https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging), restricted to the exact unpacked extension origin. Its bounded control protocol accepts only `status` and `ensure`; no command strings, arbitrary executable paths or frame data are accepted. A start lock coalesces simultaneous requests. It launches the project-owned loopback engine and returns only readiness information. The native host then exits; video continues over the existing authenticated WebSocket.
+
+The engine initializes its GPU effect on the first frame. After 15 seconds without frames it closes the effect/encoder and releases pooled allocations, including while a video is paused. An open stream prevents process shutdown so playback can resume. After the last stream closes, the browser-managed engine exits after 30 seconds idle; exiting releases the CUDA context too. Health polling never extends that deadline. A manually started API service remains persistent, but still unloads an idle effect.
+
+Registration stores the manifest in `.state/native-host` and creates a link in the browser's `NativeMessagingHosts` directory. `./vsr remove-browser-helper` removes only the links belonging to this clone. No system service, global Python install or login autostart is required. Moving the clone requires re-registering its helper and reloading the unpacked extension.
 
 ## Auto resolution and real limits
 
@@ -53,7 +67,7 @@ No arbitrary 1080p input or 4K output cap is imposed. NVENC dimensions are queri
 
 The API binds to 127.0.0.1, validates hosts, authenticates frame requests and checks browser WebSocket origins. The random local token is stored mode 0600. A malicious page cannot read the token from page-world JS; the extension bridge verifies a one-use tab grant. The worker and loopback service process local frames, with no remote upload or telemetry from project code.
 
-The toolbar dashboard is an extension page. It requests sanitized per-tab state/settings through the background, and reads health without receiving the token. DOM values use textContent, not HTML interpolation. Injected content is opt-in on arbitrary pages using activeTab; YouTube and the local fixture have declared content scripts. The dashboard does not start external executables: start the local service with `./vsr start`.
+The toolbar dashboard is an extension page. It requests sanitized per-tab state/settings through the background, and reads health without receiving the token. DOM values use textContent, not HTML interpolation. Injected content is opt-in on arbitrary pages using activeTab; YouTube and the local fixture have declared content scripts. Only enabling VSR requests native startup; opening the dashboard and polling health do not start GPU processing. The native helper uses fixed project-owned executables and retains no browser cookies or video frames.
 
 Trust is local-user trust, not isolation against another process running as the same user. Do not expose the API to a LAN or deploy it as an unauthenticated server.
 

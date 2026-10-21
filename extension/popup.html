@@ -9,66 +9,85 @@
   </head>
   <body>
     <main>
-      <header>
+      <header class="app-header">
         <div class="brand">
-          <span class="mark" aria-hidden="true">↗</span>
+          <svg
+            class="app-mark"
+            viewBox="0 0 32 32"
+            fill="none"
+            aria-hidden="true"
+          >
+            <rect x="3.5" y="6.5" width="25" height="19" rx="4" />
+            <path d="m13 12 7 4-7 4v-8Z" />
+          </svg>
           <div>
             <h1>NVIDIA VSR</h1>
-            <p>Local video enhancement</p>
+            <p>Video Super Resolution</p>
           </div>
         </div>
         <button
           id="expand"
-          class="icon"
+          class="icon-button"
           title="Open dashboard in a tab"
           aria-label="Open dashboard in a tab"
         >
-          ↗
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M11.5 3.5h5v5m-.5-4.5-7 7M8.5 4.5h-4v11h11v-4" />
+          </svg>
         </button>
       </header>
-      <div class="connection">
-        <span id="engine-dot" class="dot"></span
-        ><span id="engine">Checking local engine…</span
-        ><span class="local">ON DEVICE</span>
+
+      <div class="connection" aria-live="polite">
+        <span id="engine-dot" class="dot" aria-hidden="true"></span>
+        <span id="engine">Checking local engine…</span>
+        <button id="engine-action" class="text-button" hidden>
+          Retry connection
+        </button>
       </div>
-      <section class="hero" aria-labelledby="state-title">
-        <div class="eyebrow">
-          CURRENT VIDEO <span id="state-tag">STANDBY</span>
+
+      <section class="video-card" aria-labelledby="state-title">
+        <div class="state-heading">
+          <h2 id="state-title">Enhancement off</h2>
+          <span id="state-tag" class="state-tag">STANDBY</span>
         </div>
-        <h2 id="state-title">Ready for a clearer picture</h2>
-        <p id="summary">Play a video in this tab to begin.</p>
+        <p id="summary" class="resolution-summary">
+          Play a video in this tab to begin.
+        </p>
         <button id="toggle" class="primary" disabled>
-          Enable enhancement <span aria-hidden="true">↗</span>
+          Enable for this video
         </button>
       </section>
-      <section class="settings" aria-label="Enhancement settings">
+
+      <section class="settings" aria-labelledby="settings-title">
         <div class="section-heading">
-          <h3>Enhancement</h3>
+          <h3 id="settings-title">Picture settings</h3>
           <span id="factor">AUTO SCALE</span>
         </div>
-        <label for="scale">Scaling mode</label>
-        <select id="scale">
-          <option value="auto">Auto · fit target resolution</option>
-          <option value="1">Manual · 1×</option>
-          <option value="1.5">Manual · 1.5×</option>
-          <option value="2">Manual · 2×</option>
-          <option value="3">Manual · 3×</option>
-          <option value="4">Manual · 4×</option>
-        </select>
+        <div class="field">
+          <label for="scale">Scaling</label>
+          <select id="scale" aria-describedby="resolution-note">
+            <option value="auto">Auto · match target resolution</option>
+            <option value="1">Manual · 1×</option>
+            <option value="1.5">Manual · 1.5×</option>
+            <option value="2">Manual · 2×</option>
+            <option value="3">Manual · 3×</option>
+            <option value="4">Manual · 4×</option>
+          </select>
+        </div>
         <div class="fields">
-          <div>
-            <label for="target">Target resolution</label
-            ><select id="target">
-              <option value="720">720p HD</option>
-              <option value="1080">1080p Full HD</option>
-              <option value="1440">1440p QHD</option>
-              <option value="2160" selected>4K UHD</option>
-              <option value="4320">8K UHD</option>
+          <div class="field">
+            <label for="target">Target resolution</label>
+            <select id="target">
+              <option value="720">720p · HD</option>
+              <option value="1080">1080p · Full HD</option>
+              <option value="1440">1440p · QHD</option>
+              <option value="2160" selected>4K · UHD</option>
+              <option value="4320">8K · UHD</option>
             </select>
           </div>
-          <div>
-            <label for="quality">AI quality</label
-            ><select id="quality">
+          <div class="field">
+            <label for="quality">AI quality</label>
+            <select id="quality">
               <option value="LOW">Low · fastest</option>
               <option value="MEDIUM">Medium</option>
               <option value="HIGH" selected>High</option>
@@ -76,39 +95,48 @@
             </select>
           </div>
         </div>
-        <p id="resolution-note" class="hint">
-          Auto preserves the video's aspect ratio.
-        </p>
+        <p id="resolution-note" class="hint">Aspect ratio is preserved.</p>
       </section>
+
       <section class="metrics" aria-label="Live performance">
-        <div>
-          <span>Enhanced rate</span
-          ><strong id="fps">—<small> fps</small></strong>
+        <div class="metric">
+          <span>Enhanced rate</span>
+          <strong id="fps">—<small> fps</small></strong>
         </div>
-        <div>
-          <span>Processing</span
-          ><strong id="latency">—<small> ms</small></strong>
+        <div class="metric">
+          <span>Processing time</span>
+          <strong id="latency">—<small> ms</small></strong>
         </div>
-        <div>
-          <span>Audio delay added</span
-          ><strong id="audio">—<small> ms</small></strong>
+        <div class="metric">
+          <span>Added audio delay</span>
+          <strong id="audio">—<small> ms</small></strong>
         </div>
       </section>
-      <div id="message" role="status" aria-live="polite">
-        Connecting to the active tab…
-      </div>
-      <div id="help" hidden>
-        Start the engine in the project folder:<code>./vsr start</code>
-        <p>The extension connects to 127.0.0.1:8730.</p>
+
+      <div class="feedback">
+        <p id="message" role="status" aria-live="polite">
+          Connecting to the active tab…
+        </p>
+        <div id="help" hidden>
+          <p>One-time setup in the project folder:</p>
+          <code>./vsr install-browser-helper</code>
+          <a
+            href="https://github.com/maxiarat1/linux-nvidia-vsr/blob/main/docs/browser-setup.md"
+            target="_blank"
+            rel="noreferrer"
+            >Browser setup guide ↗</a
+          >
+        </div>
       </div>
       <footer>
-        <label class="checkbox"
-          ><input id="panel" type="checkbox" /> Show controls on video
-          page</label
-        ><span class="version">v0.7</span>
+        <label class="checkbox" for="panel">
+          <input id="panel" type="checkbox" />
+          <span>Show controls on video page</span>
+        </label>
+        <span class="local-label">Local processing</span>
       </footer>
       <p id="preview-note" hidden>
-        Interactive preview · sample metrics, no GPU connection
+        Interactive preview · simulated video and metrics
       </p>
     </main>
   </body>

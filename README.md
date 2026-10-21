@@ -51,14 +51,16 @@ For YouTube, open a video in this browser window. Its selected source resolution
 ## Use your normal browser
 
 ```bash
-./vsr start
+./vsr install-browser-helper
 ```
 
-Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select this repository's **`extension/`** directory. Pin **Local NVIDIA VSR** to the toolbar and refresh existing video tabs. Run `./vsr configure` first after an update. The generated manifest and authorization are local to your installation; do not share that directory as a ready-made extension package.
+This one-time setup registers a small browser native-messaging helper. After loading the extension, **Enable for this video** starts the engine automatically. Turning enhancement off lets the browser-managed engine exit after 30 seconds idle, releasing its CUDA context and GPU allocations. A paused stream unloads its AI effect after 15 seconds and reloads it on resume. There is no login service or always-running GPU engine. The extension itself cannot execute CUDA, so a local process remains necessary while enhancement is active.
+
+Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select this repository's **`extension/`** directory. Pin **Local NVIDIA VSR** to the toolbar and refresh existing video tabs. Run `./vsr configure` after an update, then reload the extension and refresh the video page. The generated manifest and authorization are local to your installation; do not share that directory as a ready-made extension package.
 
 On Arch-packaged Helium, `./vsr install-helium` offers an explicit flags-file setup with an undo record inside `.state/`. It preserves existing extension paths and feature lists, adds the verified NVIDIA/Wayland flags, and leaves restarting to you. `./vsr remove-helium` restores the saved flags if they have not been edited since installation.
 
-On browsers that support it, `--load-extension=/absolute/path/to/extension` is another option. Preserve any existing extension paths in that flag. The [browser setup guide](docs/browser-setup.md) explains GPU flags, the Helium launcher, updates and removal. This project does not install a system service or change normal browser flags automatically.
+On browsers that support it, `--load-extension=/absolute/path/to/extension` is another option. Preserve any existing extension paths in that flag. The [browser setup guide](docs/browser-setup.md) explains GPU flags, the Helium launcher, updates and removal. This project installs no system service. Helper registration uses a removable link in the browser profile; its executable, manifest, dependencies and recovery records stay in this project. Normal browser flags change only through the explicit `install-helium` command.
 
 ## How it works
 
@@ -106,8 +108,10 @@ Useful commands:
 node --test tests/presentation.test.cjs
 ```
 
-All installed runtimes, caches, credentials, browser profiles and generated media stay in ignored project directories. To remove an isolated installation, close its browser and stop the service, then delete the clone. For a normal-profile installation, first remove the extension and any manually added browser flag or launcher; then delete the clone. Keep `.state/helium-profile` if you want to preserve that profile.
+All installed runtimes, caches, credentials, browser profiles and generated media stay in ignored project directories. To remove an isolated installation, close its browser and stop the service, then delete the clone. For a normal-profile installation, first run `./vsr remove-browser-helper`, remove the extension and any manually added browser flag or launcher; then delete the clone. Keep `.state/helium-profile` if you want to preserve that profile.
 
 ## License
+
+For API development, `./vsr start` still starts a persistent service; `./vsr stop` stops it. The toolbar does not need that command.
 
 Project source is [MIT licensed](LICENSE). NVIDIA SDKs, models and other dependencies retain their own licenses and are downloaded separately. See [THIRD_PARTY.md](THIRD_PARTY.md). NVIDIA and GeForce RTX are NVIDIA trademarks; this project is not affiliated with or endorsed by NVIDIA.

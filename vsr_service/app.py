@@ -3,6 +3,8 @@ import hmac
 import json
 import os
 import secrets
+import signal
+import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from functools import partial
@@ -28,13 +30,37 @@ engine = Engine()
 pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="vsr-gpu")
 # Exactly one request may own the GPU; no unbounded queue behind active video.
 gpu_lock = asyncio.Lock()
+managed = os.environ.get("VSR_BROWSER_MANAGED") == "1"
+idle_seconds = max(5, float(os.environ.get("VSR_ENGINE_IDLE_SECONDS", "30")))
+last_used = time.monotonic()
+active_streams = 0
+
+
+async def idle_watchdog():
+    while True:
+        await asyncio.sleep(1)
+        age = time.monotonic() - last_used
+        if gpu_lock.locked():
+            continue
+        if engine.effect is not None and age >= 15:
+            async with gpu_lock:
+                await asyncio.get_running_loop().run_in_executor(pool, engine.close)
+        if managed and not active_streams and age >= idle_seconds:
+            # Uvicorn's signal handler performs normal lifespan/worker cleanup.
+            os.kill(os.getpid(), signal.SIGTERM)
+            return
 
 
 @asynccontextmanager
 async def lifespan(app):
-    yield
-    await asyncio.get_running_loop().run_in_executor(pool, engine.close)
-    pool.shutdown(wait=True)
+    watchdog = asyncio.create_task(idle_watchdog())
+    try:
+        yield
+    finally:
+        watchdog.cancel()
+        await asyncio.gather(watchdog, return_exceptions=True)
+        await asyncio.get_running_loop().run_in_executor(pool, engine.close)
+        pool.shutdown(wait=True)
 
 
 app = FastAPI(title="Local NVIDIA VSR", lifespan=lifespan)
@@ -53,15 +79,19 @@ def authenticate(request):
 
 
 async def process(data, quality, scale, output_format="jpeg"):
+    global last_used
     if gpu_lock.locked():
         raise HTTPException(429, "Engine busy with another frame; retry later")
     async with gpu_lock:
+        last_used = time.monotonic()
         try:
             return await asyncio.get_running_loop().run_in_executor(
                 pool, partial(engine.process, data, quality, scale, output_format)
             )
         except (ValueError, OSError) as e:
             raise HTTPException(422, str(e)) from e
+        finally:
+            last_used = time.monotonic()
 
 
 @app.get("/health")
@@ -73,6 +103,9 @@ def health():
         "frames": engine.frames,
         "last": engine.last,
         "bind": "127.0.0.1",
+        "managed": managed,
+        "active_streams": active_streams,
+        "idle_shutdown_seconds": idle_seconds if managed else None,
     }
 
 
@@ -96,6 +129,8 @@ async def frame(
 
 @app.websocket("/v1/stream")
 async def stream(ws: WebSocket):
+    global active_streams, last_used
+    registered = False
     origin = ws.headers.get("origin", "")
     if origin and not (
         origin.startswith("chrome-extension://")
@@ -111,6 +146,9 @@ async def stream(ws: WebSocket):
             return
         quality, scale = config.get("quality", "HIGH"), float(config.get("scale", 2))
         output_format = config.get("format", "jpeg")
+        active_streams += 1
+        registered = True
+        last_used = time.monotonic()
         await ws.send_json({"type": "ready", "engine": "NVIDIA VideoSuperRes"})
         while True:
             message = await ws.receive()
@@ -135,6 +173,10 @@ async def stream(ws: WebSocket):
             await ws.send_json({"type": "error", "message": str(e)})
         except (RuntimeError, WebSocketDisconnect):
             pass
+    finally:
+        if registered:
+            active_streams -= 1
+            last_used = time.monotonic()
 
 
 @app.get("/")
